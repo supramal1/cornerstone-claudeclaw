@@ -1,0 +1,16 @@
+[Unit]
+Description=ClaudeClaw hosted daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__OPERATOR_USER__
+EnvironmentFile=__INSTALL_ROOT__/claudeclaw.env
+WorkingDirectory=__WORKSPACE_ROOT__
+ExecStart=__INSTALL_ROOT__/bin/start-claudeclaw-vm.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

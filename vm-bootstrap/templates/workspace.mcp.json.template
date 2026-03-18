@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "/opt/cornerstone/.venv/bin/python",
+      "args": [
+        "/opt/cornerstone-integrations/mcp_server.py"
+      ]
+    }
+  }
+}
