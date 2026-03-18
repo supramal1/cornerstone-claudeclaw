@@ -21,7 +21,11 @@ Current stack split:
 - `cornerstone-integrations`: MCP/connectors and integration proofs
 - `cornerstone-claudeclaw`: runtime repo to populate intentionally next
 
-Suggested next migration scope:
-1. Move tracked runtime code from the old local `openclaw` repo into this repo.
-2. Bring over only repo-safe hosted scripts and docs.
-3. Keep VM runtime state out of git.
+## Key Docs
+
+- [ROADMAP_STATUS.md](ROADMAP_STATUS.md) — Current priorities and sprint status
+- [REPO_ARCHITECTURE_STATUS.md](REPO_ARCHITECTURE_STATUS.md) — Repo split verdict
+
+## Migration Status
+
+Migration from `openclaw` is effectively complete. See REPO_ARCHITECTURE_STATUS.md for details.
