@@ -4,9 +4,15 @@
 
 .claude/
 .mcp.json
+CUTOVER_WINDOW_AUTHORIZED.env
 
 logs/
 *.log
+*.txt
+*.bak
+*.bak-*
+*.backup
+backup/
 backups/
 .codex-backups/
 tmp/
