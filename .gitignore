@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+.claude/
+.mcp.json
+
+logs/
+*.log
+backups/
+.codex-backups/
+tmp/
+
+node_modules/
+dist/
+coverage/
