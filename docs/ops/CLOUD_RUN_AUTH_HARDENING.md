@@ -1,7 +1,7 @@
 # Cloud Run Auth Hardening - Complete
 
 **Date:** 2026-03-18
-**Status:** ⚠️ **PARTIAL** — Infra hardened, UI deployment pending
+**Status:** ⚠️ **PARTIAL** — Backend verified, Vercel routing issue
 
 ---
 
@@ -11,20 +11,63 @@
 |-----------|--------|-------|
 | Cloud Run IAM | ✅ HARDENED | Only SA + user can invoke |
 | Backend (FastAPI) | ✅ OPERATIONAL | X-API-Key enforced |
-| UI Code | ✅ UPDATED | IAM token auth implemented locally |
-| UI Deployment | ❌ PENDING | Changes not committed/pushed |
-| Vercel Env Vars | ❌ PENDING | `GCP_SERVICE_ACCOUNT_KEY` not set |
+| UI Code | ✅ COMMITTED | IAM token auth pushed to GitHub |
+| UI Deployment | ⚠️ PARTIAL | Deployed but routing issues |
+| Vercel Env Vars | ❓ UNKNOWN | `GCP_SERVICE_ACCOUNT_KEY` status unverified |
 
 ---
 
-## Blocking Issue
+## Backend Verification (2026-03-18 20:43 UTC)
 
-The deployed Vercel UI is still using the old auth code (X-API-Key only). It cannot reach the hardened backend because:
-1. `google-auth-library` dependency not in deployed package.json
-2. `memory-manager.ts` doesn't have IAM token code
-3. `GCP_SERVICE_ACCOUNT_KEY` env var not set in Vercel
+**All backend endpoints verified working with IAM + API Key auth:**
 
-**Result:** UI will return 500/403 errors on protected endpoints.
+```bash
+# Health endpoint (IAM auth only)
+curl -H "Authorization: Bearer $TOKEN" "$URL/health"
+# Result: {"status":"ok","service":"cornerstone-memory-manager","version":"1.0.0"}
+# HTTP: 200 ✅
+
+# Memory recent (IAM + API Key)
+curl -H "Authorization: Bearer $TOKEN" -H "X-API-Key: $KEY" "$URL/memory/recent"
+# Result: JSON with facts, notes, episodic, semantic, sessions arrays
+# HTTP: 200 ✅
+
+# Context endpoint (IAM + API Key)
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"test","namespace":"default","agent_id":"verification"}' \
+  "$URL/context"
+# Result: Valid context with graph memory
+# HTTP: 200 ✅
+```
+
+**Unauthenticated access blocked:**
+```bash
+curl "$URL/health"
+# Result: 403 Forbidden ✅
+```
+
+---
+
+## Vercel Deployment Issue
+
+**Observed behavior:**
+- `/sign-in` → 200 OK ✅
+- `/memory` → 404 ❌
+- `/facts` → 404 ❌
+- `/api/memory/recent` → 404 ❌
+
+**Possible causes:**
+1. Clerk configuration issue (routes not redirecting to sign-in)
+2. Build error not caught by Vercel
+3. Missing `GCP_SERVICE_ACCOUNT_KEY` env var
+4. Next.js routing misconfiguration
+
+**Required investigation:**
+1. Check Vercel build logs for errors
+2. Verify all env vars are set (especially `GCP_SERVICE_ACCOUNT_KEY`)
+3. Test authenticated browser session
+4. Check Clerk dashboard for configuration issues
 
 ---
 

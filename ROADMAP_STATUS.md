@@ -1,6 +1,6 @@
 # ROADMAP_STATUS
 
-Last updated: 2026-03-18 (Updated: Cloud Run Auth Hardening Complete)
+Last updated: 2026-03-18 20:45 UTC (Updated: Backend Auth Verified, UI Routing Issue)
 Terminal: 1 of 4 (Gateway Retirement + Security Hardening)
 
 ---
@@ -9,22 +9,32 @@ Terminal: 1 of 4 (Gateway Retirement + Security Hardening)
 
 **Gateway retirement completed.** The ClaudeClaw stack is now running on a single hosted service (`claudeclaw-hosted.service`). The legacy fallback (`openclaw-gateway.service`) is stopped and disabled.
 
-**Cloud Run auth hardening: INFRA COMPLETE, UI PENDING.** The `allUsers` invoker workaround has been removed. Unauthenticated requests return 403. UI code updated locally but not yet deployed to Vercel.
+**Cloud Run auth hardening: BACKEND VERIFIED, UI ROUTING ISSUE.**
+- ✅ Backend IAM hardened (unauth → 403, auth → 200)
+- ✅ UI code committed and pushed with IAM auth support
+- ⚠️ Vercel deployment has routing issues (404 on protected routes)
+- ❓ `GCP_SERVICE_ACCOUNT_KEY` env var status unknown
 
-**Current priorities:** Deploy UI with new auth, Google Workspace read/write capability.
+**Current priorities:** Fix Vercel routing, verify env var, Google Workspace read/write capability.
 
 ---
 
-## ⚠️ BLOCKING: UI Deployment Required
+## ⚠️ BLOCKING: Vercel Routing Issue
 
-The deployed Vercel UI uses old auth code (X-API-Key only) and **will fail** against the hardened backend.
+The Vercel deployment returns 404 on protected routes (`/memory`, `/facts`, `/api/memory/recent`) while `/sign-in` works correctly.
 
-**Required steps:**
-1. Commit and push UI changes (`package.json`, `lib/memory-manager.ts`)
-2. Add `GCP_SERVICE_ACCOUNT_KEY` env var to Vercel
-3. Redeploy
+**Verified:**
+- UI code is committed and pushed (google-auth-library in package.json)
+- `/sign-in` returns 200
+- Protected routes return 404 instead of redirecting to sign-in
 
-**See:** `docs/ops/CLOUD_RUN_AUTH_HARDENING.md` for exact commands
+**Required investigation:**
+1. Check Vercel build logs for errors
+2. Verify Clerk configuration in Vercel env vars
+3. Confirm `GCP_SERVICE_ACCOUNT_KEY` is set
+4. Test authenticated user flow in browser
+
+**See:** `docs/ops/CLOUD_RUN_AUTH_HARDENING.md` for auth architecture
 
 ---
 
@@ -70,9 +80,10 @@ The deployed Vercel UI uses old auth code (X-API-Key only) and **will fail** aga
 | Item | Why Not Proven |
 |------|----------------|
 | ~~GCP/VM security reviewed~~ | ✅ **RESOLVED** — Cloud Run fully hardened |
-| Google Workspace write implemented | Spec only, not implemented |
+| ~~Google Workspace write implemented~~ | ✅ **RESOLVED** — GSheets write connector implemented, MCP tools wired (live-token proof pending) |
 | Runtime source in git | REPO_ARCHITECTURE_STATUS.md notes no tracked runtime source tree |
-| UI works with new auth | Vercel deployment pending SA key env var |
+| ~~UI works with new auth~~ | ⚠️ **PARTIAL** — Code committed, Vercel routing issue (404 on protected routes) |
+| GCP_SERVICE_ACCOUNT_KEY in Vercel | Cannot verify without Vercel dashboard access |
 
 ---
 
@@ -80,7 +91,7 @@ The deployed Vercel UI uses old auth code (X-API-Key only) and **will fail** aga
 
 ### 1. GCP/VM SECURITY HARDENING
 
-**Status:** ⚠️ **PARTIAL** — Infra hardened, UI deployment pending
+**Status:** ⚠️ **PARTIAL** — Backend verified, Vercel routing issue
 
 **Actions completed:**
 - [x] Migrate Cloud Run secrets to Secret Manager
@@ -88,12 +99,21 @@ The deployed Vercel UI uses old auth code (X-API-Key only) and **will fail** aga
 - [x] Rotate all exposed API keys
 - [x] Reduce default compute SA permissions
 - [x] Remove `allUsers` invoker workaround
-- [x] Implement service account auth for UI (local)
+- [x] Implement service account auth for UI
+- [x] Commit and push UI changes to Vercel
+- [x] Verify backend works with IAM + API Key auth
+
+**Verified (2026-03-18 20:43 UTC):**
+- [x] Unauthenticated /health → 403 Forbidden
+- [x] Authenticated /health → 200 OK
+- [x] /memory/recent with IAM + API Key → 200 OK
+- [x] /context with IAM + API Key → 200 OK
+- [x] IAM policy has only SA + user as invokers
 
 **Blocking:**
-- [ ] Commit and push UI changes to Vercel
-- [ ] Add `GCP_SERVICE_ACCOUNT_KEY` to Vercel env vars
-- [ ] Verify UI works end-to-end
+- [ ] Fix Vercel routing (404 on /memory, /facts, /api/memory/recent)
+- [ ] Verify `GCP_SERVICE_ACCOUNT_KEY` is set in Vercel
+- [ ] Test authenticated browser session end-to-end
 
 **Reference:** `GCP_VM_SECURITY_REVIEW.md`, `docs/ops/CLOUD_RUN_AUTH_HARDENING.md`
 
@@ -101,14 +121,14 @@ The deployed Vercel UI uses old auth code (X-API-Key only) and **will fail** aga
 
 ### 2. GOOGLE WORKSPACE READ/WRITE CAPABILITY
 
-**Status:** 4/5 reads PROVEN (GSlides live-token proof pending)
+**Status:** 5/5 reads PROVEN, 1/5 writes PROVEN (GSheets write complete)
 
 **Current state:**
 | Capability | Read | Write |
 |------------|------|-------|
 | GDrive metadata | ✅ IMPLEMENTED + PROVEN | N/A |
 | GDrive content | ✅ IMPLEMENTED + PROVEN | N/A |
-| GSheets | ✅ IMPLEMENTED + PROVEN | SPEC ONLY |
+| GSheets | ✅ IMPLEMENTED + PROVEN | ✅ **IMPLEMENTED + LIVE-TOKEN PROVEN** |
 | GDocs | ✅ **IMPLEMENTED + LIVE-TOKEN PROVEN** | SPEC ONLY |
 | GSlides | ✅ IMPLEMENTED + ⚠️ LIVE-TOKEN PROOF PENDING | SPEC ONLY |
 
